@@ -1,38 +1,36 @@
 import numpy as np
-from src.algo_processing import get_file
 
 
 
-def get_sequence(data_path):
-    local_path = get_file(data_path)
-    dataframe = process_sequence(local_path)
-    return dataframe
+def process_input(data: dict, multiplier: float, meta_data: dict):
+    tensor = data['tensor']
+    tensor = np.asarray(tensor, dtype=np.float64)
+    normalized_tensor = normalize_and_remove_outliers(tensor, multiplier, meta_data)
+    return normalized_tensor
 
 
-def is_header(row):
-    try:
-        _ = float(row[0])
-        return False
-    except:
-        return True
+# We first remove outliers based on the new dataset.
+# However, we normalize based on the original training data.
+# This is to make sure we're consistent in values fed into the network.
+def normalize_and_remove_outliers(data: np.ndarray, multiplier: float, meta_data: dict):
+    mean = np.mean(data, axis=0)
+    sd = np.std(data, axis=0)
+    dimensions = meta_data['io_dimension']
+    norm_boundaries = meta_data['norm_boundaries']
+    for i in range(dimensions):
+        for j in range(len(data[:, i])):
+            max_delta = mean[i] - multiplier * sd[i]
+            if not (data[j, i] > max_delta):
+                print('clipped {} for being too far above the mean.'.format(str(data[j, i])))
+                data[j, i] = max_delta
+            elif not (-data[j, i] > max_delta):
+                print('clipped {} for being too far below the mean.'.format(str(data[j, i])))
+                data[j, i] = -max_delta
+    for i in range(dimensions):
+        numerator = np.subtract(data[:, i], norm_boundaries[i]['min'])
+        data[:, i] = np.divide(numerator, norm_boundaries[i]['max'] - norm_boundaries[i]['min'])
 
-def process_sequence(data_path):
-    data = get_frame(data_path)
-    if is_header(data[0]):
-       data.pop(0)
-    floated = []
-    for elm in data:
-        new_dim = []
-        for dim in elm:
-            new_dim.append(float(dim))
-        floated.append(new_dim)
-    npdata = np.asarray(floated).astype(np.float)
-    return npdata
+    return data
 
 
-def get_frame(local_path):
-    with open(local_path) as f:
-        lines = f.read().split('\n')
-        csv = [x.split(',') for x in lines]
-    csv.pop(-1)
-    return csv
+

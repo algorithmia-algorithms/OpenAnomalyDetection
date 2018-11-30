@@ -1,35 +1,33 @@
-import scipy.stats as st
-from src import algo_processing, data_processing, graphing, forecast
-
+from src import network_processing, graph, forecast
+import numpy as np
 
 class InputFormat:
     data_path = None
+    graph_save_path = None
     max_sigma = 2
     model_path = ""
-    calibration_percentage = 0.0
-    view_size = 15
-    resolution_step_size = 5
-    zero = False
+    calibration_percentage = 0.1
     def __init__(self, data):
-        if 'data_path' in data and isinstance(data['data_path'], str):
-            self.data_path = data['data_path']
+        if 'data_path' in data:
+            self.data_path = type_check(data, 'data_path', str)
         else:
-            raise algo_processing.AlgorithmError("'data_path' was either not found, or not a string")
-        if 'model_path' in data and isinstance(data['model_path'], str):
-            self.model_path = data['model_path']
-        if 'max_sigma' in data and isinstance(data['max_sigma'], float):
-            self.max_sigma = data['max_sigma']
-        if 'calibration_percentage' in data and isinstance(data['calibration_percentage'], float):
-            self.calibration_percentage = data['calibration_percentage']
-        if 'view_size' in data and isinstance(data['view_size'], int):
-            self.view_size = data['view_size']
-        if 'resolution_step_size' in data and isinstance(data['resolution_step_size'], int):
-            self.resolution_step_size = data['resolution_step_size']
-        if 'zero_state' in data and isinstance(data['zero_state'], str):
-            if data['zero_state'] == "True" or data['zero_state'] == "true":
-                zero = True
-            else:
-                zero = False
+            raise network_processing.AlgorithmError("'data_path' was either not found, or not a string")
+        if 'model_input_path' in data:
+            self.model_path = type_check(data, 'model_input_path', str)
+        if 'max_sigma' in data:
+            self.max_sigma = type_check(data, 'max_sigma', float)
+        if 'calibration_percentage' in data:
+            self.calibration_percentage = type_check(data, 'calibration_percentage', float)
+        if 'graph_save_path' in data:
+            self.graph_save_path = type_check(data, 'graph_save_path', str)
+
+def type_check(dic, id, type):
+    if isinstance(dic[id], type):
+        return dic[id]
+    else:
+        raise network_processing.AlgorithmError("'{}' must be of {}".format(str(id), str(type)))
+
+
 
 def find_anomalies(result, max_sigma):
     point_anomalies = []
@@ -49,7 +47,6 @@ def convert_to_anomalous_regions(point_anomalies, anomaly_radius, threshold):
     for point in point_anomalies:
         index = point['index']
         sigma = point['sigma']
-        confidence = st.norm.cdf(sigma)
         anom_gaussian = {'lower': index - anomaly_radius, 'upper': index + anomaly_radius, 'sigma': sigma}
         anom_gaussians.append(anom_gaussian)
 
@@ -117,13 +114,19 @@ def calc_num_evals(dataframe, coverage_percentage):
 
 def apply(input):
     guard = InputFormat(input)
-    sideeffect_prefix = 'data://.algo/timeseries/anomalydetection/temp'
     threshold = 1
-    dataframe = data_processing.get_sequence(guard.data_path)
-    result = forecast.execute(dataframe, guard.model_path, guard.view_size, guard.resolution_step_size, guard.calibration_percentage, guard.zero)
+    data_path = network_processing.get_data(guard.data_path)
+    data = network_processing.load_json(data_path)
+    data = np.asarray(data['tensor'])
+    model, meta = network_processing.get_model_package(guard.model_path)
+    forecaster = forecast.Model(meta, model)
+    result = forecaster.execute(data, guard.calibration_percentage)
     anomalies = find_anomalies(result, guard.max_sigma)
-    anomalous_regions = convert_to_anomalous_regions(anomalies, guard.view_size * 2, threshold)
-    local_graph_path = graphing.graph_anomalies(anomalous_regions, dataframe)
-    remote_file_path = algo_processing.upload_image(local_graph_path, sideeffect_prefix)
-    output = {'graph_path': remote_file_path, 'anomalous_regions': anomalous_regions}
+    anomalous_regions = convert_to_anomalous_regions(anomalies, meta['forecast_length'] * 2, threshold)
+    if guard.graph_save_path:
+        local_graph_path = graph.graph_anomalies(anomalous_regions, data)
+        remote_file_path = network_processing.put_file(local_graph_path, guard.graph_save_path)
+        output = {'graph_save_path': remote_file_path, 'anomalous_regions': anomalous_regions}
+    else:
+        output = {'anomalous_regions': anomalous_regions}
     return output
