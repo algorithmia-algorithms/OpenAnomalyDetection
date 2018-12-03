@@ -64,13 +64,14 @@ class Model:
         h_f = self.select_key_variables(h)
         deviations = criterion(y_f, h_f)
         for i in range(deviations.shape[0]):
-            deviation = deviations[i]
-            intermediate = {'error': deviation.numpy(), 'index': i}
-            forecast_outputs.append(intermediate)
+            for j in range(deviations.shape[1]):
+                deviation = deviations[i, j]
+                intermediate = {'error': deviation, 'index': i, 'dimension': j}
+                forecast_outputs.append(intermediate)
         results = process_output_advanced(forecast_outputs)
         return results
 
-    def update(self, residual: torch.Tensor, memory: torch.Tensor, x: torch.Tensor):
+    def update(self, x: torch.Tensor, residual: torch.Tensor, memory: torch.Tensor):
         h_t = None
         for i in range(len(x)):
             x_t = x[i].view(1, -1)
@@ -167,10 +168,11 @@ def revert_normalization(data, state):
 
 def criterion(prediction, target):
     error_rate = 0
-    for j in range(len(prediction)):
-        out = math.pow(prediction[j] - target[j], 2)
+    for j in range(prediction.shape[1]):
+        out = (prediction[:, j] - target[:, j]).pow(2)
         error_rate += out
-    error_rate /= len(prediction)
+    error_rate /= prediction.shape[0]
+    error_rate = error_rate.detach().numpy()
     return error_rate
 
 
