@@ -12,8 +12,6 @@ def test_detect():
     result = apply(input)
     assert os.path.isfile(result['graph_save_path'])
 
-    result = apply(input)
-    assert result
 
 
 if __name__ == "__main__":

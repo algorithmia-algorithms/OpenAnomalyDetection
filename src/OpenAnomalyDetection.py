@@ -1,4 +1,4 @@
-from src import network_processing, graph, forecast
+from src import network_processing, data_processing, graph, forecast
 import numpy as np
 
 class InputFormat:
@@ -28,17 +28,17 @@ def type_check(dic, id, type):
         raise network_processing.AlgorithmError("'{}' must be of {}".format(str(id), str(type)))
 
 
-
+# TODO: make this multi-dim
 def find_anomalies(result, max_sigma):
     point_anomalies = []
-    error_mean = result['summary']['error']['mean']
-    error_std = result['summary']['error']['std']
+    error_mean = result['summary'][0]['mean']
+    error_std = result['summary'][0]['std']
     error_max = error_mean + error_std*max_sigma
-    for obs in result['info']:
-        error = obs['error']
+    for i in range(result['info'].shape[0]):
+        error = result['info'][i][0]
         if error >= error_max:
             sigma = (error - error_mean) / error_std
-            anomaly = {'sigma': sigma, 'index': obs['index']}
+            anomaly = {'sigma': sigma, 'index': i}
             point_anomalies.append(anomaly)
     return point_anomalies
 
@@ -117,14 +117,15 @@ def apply(input):
     threshold = 1
     data_path = network_processing.get_data(guard.data_path)
     data = network_processing.load_json(data_path)
-    data = np.asarray(data['tensor'])
     model, meta = network_processing.get_model_package(guard.model_path)
+    normalized_data = data_processing.process_input(data, 15, meta)
     forecaster = forecast.Model(meta, model)
-    result = forecaster.execute(data, guard.calibration_percentage)
+    result = forecaster.execute(normalized_data, guard.calibration_percentage)
     anomalies = find_anomalies(result, guard.max_sigma)
     anomalous_regions = convert_to_anomalous_regions(anomalies, meta['forecast_length'] * 2, threshold)
     if guard.graph_save_path:
-        local_graph_path = graph.graph_anomalies(anomalous_regions, data)
+        graphable_data = normalized_data[:, 0:1]
+        local_graph_path = graph.graph_anomalies(anomalous_regions, graphable_data)
         remote_file_path = network_processing.put_file(local_graph_path, guard.graph_save_path)
         output = {'graph_save_path': remote_file_path, 'anomalous_regions': anomalous_regions}
     else:

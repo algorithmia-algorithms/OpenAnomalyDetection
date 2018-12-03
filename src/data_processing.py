@@ -2,6 +2,7 @@ import numpy as np
 
 
 
+
 def process_input(data: dict, multiplier: float, meta_data: dict):
     tensor = data['tensor']
     tensor = np.asarray(tensor, dtype=np.float64)

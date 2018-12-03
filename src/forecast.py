@@ -34,7 +34,6 @@ class Model:
             working_residual = init_residual
             working_memory = init_memory
         max_bound = anom_data.shape[0] - self.forecast_length * 2
-        forecast_outputs = []
 
         # for i in range(0, max_bound):
         #     next_point = anom_data[i:i+1, :]
@@ -63,12 +62,7 @@ class Model:
         y_f = self.select_key_variables(y)
         h_f = self.select_key_variables(h)
         deviations = criterion(y_f, h_f)
-        for i in range(deviations.shape[0]):
-            for j in range(deviations.shape[1]):
-                deviation = deviations[i, j]
-                intermediate = {'error': deviation, 'index': i, 'dimension': j}
-                forecast_outputs.append(intermediate)
-        results = process_output_advanced(forecast_outputs)
+        results = process_output_advanced(deviations)
         return results
 
     def update(self, x: torch.Tensor, residual: torch.Tensor, memory: torch.Tensor):
@@ -106,12 +100,18 @@ class Model:
                 for feature in self.key_variables:
                     index = feature['index']
                     filtered_tensors.append(tensor[:, :, index])
-                filtered_tensor = torch.stack(filtered_tensors, dim=2)
+                if isinstance(tensor, torch.Tensor):
+                    filtered_tensor = torch.stack(filtered_tensors, dim=2)
+                else:
+                    filtered_tensor = np.stack(filtered_tensors, axis=2)
             else:
                 for feature in self.key_variables:
                     index = feature['index']
                     filtered_tensors.append(tensor[:, index])
-                filtered_tensor = torch.stack(filtered_tensors, dim=1)
+                if isinstance(tensor, torch.Tensor):
+                    filtered_tensor = torch.stack(filtered_tensors, dim=1)
+                else:
+                    filtered_tensor = np.stack(filtered_tensors, axis=1)
         else:
             filtered_tensor = tensor
         return filtered_tensor
@@ -127,27 +127,32 @@ class Model:
 
 
 
-def process_output_advanced(results):
+def process_output_advanced(measurements: np.ndarray):
     metadata = {}
-    metadata['error'] = {}
-    metadata['error']['mean'] = 0
-    metadata['error']['std'] = None
-    metadata['error']['max'] = {'value': 0, 'id': None}
-    metadata['error']['min'] = {'value': -1, 'id': None}
-    errors = []
-    for result in results:
-        errors.append(result['error'])
-        metadata['error']['mean'] += result['error']
-        if result['error'] > metadata['error']['max']['value']:
-            metadata['error']['max']['value'] = result['error']
-            metadata['error']['max']['id'] = result['index']
-        if result['error'] < metadata['error']['min']['value'] or metadata['error']['min']['value'] == -1:
-            metadata['error']['min']['value'] = result['error']
-            metadata['error']['min']['id'] = result['index']
-    metadata['error']['mean'] /= len(results)
-    metadata['error']['std'] = np.std(np.asarray(errors))
+    for i in range(measurements.shape[1]):
+        metadata[i] = {}
+        metadata[i]['mean'] = 0
+        metadata[i]['std'] = None
+        metadata[i]['max'] = {'value': 0, 'id': None}
+        metadata[i]['min'] = {'value': -1, 'id': None}
+        metadata[i]['errors'] = []
+
+    for j in range(measurements.shape[1]):
+        for_dim = metadata[j]
+        for i in range(measurements.shape[0]):
+            error = measurements[i, j]
+            for_dim['errors'].append(error)
+            for_dim['mean'] += error
+            if error > for_dim['max']['value']:
+                for_dim['max']['value'] = error
+                for_dim['max']['id'] = i
+            if error < for_dim['min']['value'] or for_dim['min']['value'] == -1:
+                for_dim['min']['value'] = error
+                for_dim['min']['id'] = i
+        for_dim['mean'] /= len(measurements[:, j])
+        for_dim['std'] = np.std(np.asarray(measurements[:, j]))
     output = {
-        'info': results,
+        'info': measurements,
         'summary': metadata
     }
     return output
