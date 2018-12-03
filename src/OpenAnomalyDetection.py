@@ -6,6 +6,7 @@ class InputFormat:
     graph_save_path = None
     max_sigma = 2
     model_path = ""
+    variable_index = 1
     calibration_percentage = 0.1
     def __init__(self, data):
         if 'data_path' in data:
@@ -20,6 +21,8 @@ class InputFormat:
             self.calibration_percentage = type_check(data, 'calibration_percentage', float)
         if 'graph_save_path' in data:
             self.graph_save_path = type_check(data, 'graph_save_path', str)
+        if 'variable_index' in data:
+            self.variable_index = type_check(data, 'variable_index', int)
 
 def type_check(dic, id, type):
     if isinstance(dic[id], type):
@@ -29,16 +32,16 @@ def type_check(dic, id, type):
 
 
 # TODO: make this multi-dim
-def find_anomalies(result, max_sigma):
+def find_anomalies(errors, max_sigma, dimension):
     point_anomalies = []
-    error_mean = result['summary'][0]['mean']
-    error_std = result['summary'][0]['std']
+    error_mean = errors['summary'][dimension]['mean']
+    error_std = errors['summary'][dimension]['std']
     error_max = error_mean + error_std*max_sigma
-    for i in range(result['info'].shape[0]):
-        error = result['info'][i][0]
+    for i in range(errors['info'].shape[0]):
+        error = errors['info'][i][dimension]
         if error >= error_max:
             sigma = (error - error_mean) / error_std
-            anomaly = {'sigma': sigma, 'index': i}
+            anomaly = {'sigma': sigma, 'index': i, 'dimension': dimension}
             point_anomalies.append(anomaly)
     return point_anomalies
 
@@ -121,10 +124,11 @@ def apply(input):
     normalized_data = data_processing.process_input(data, 15, meta)
     forecaster = forecast.Model(meta, model)
     result = forecaster.execute(normalized_data, guard.calibration_percentage)
-    anomalies = find_anomalies(result, guard.max_sigma)
+    anomalies = find_anomalies(result, guard.max_sigma, guard.variable_index)
     anomalous_regions = convert_to_anomalous_regions(anomalies, meta['forecast_length'] * 2, threshold)
     if guard.graph_save_path:
-        graphable_data = normalized_data[:, 0:1]
+        key_data = data_processing.select_key_variables(meta['key_variables'], normalized_data)
+        graphable_data = key_data[:, guard.variable_index-1:guard.variable_index]
         local_graph_path = graph.graph_anomalies(anomalous_regions, graphable_data)
         remote_file_path = network_processing.put_file(local_graph_path, guard.graph_save_path)
         output = {'graph_save_path': remote_file_path, 'anomalous_regions': anomalous_regions}

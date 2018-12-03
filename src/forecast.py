@@ -1,9 +1,9 @@
 
 import math
 import torch
+from src.data_processing import select_key_variables
 from torch.autograd import Variable
 from torch import from_numpy
-from time import perf_counter
 import numpy as np
 
 
@@ -34,33 +34,11 @@ class Model:
             working_residual = init_residual
             working_memory = init_memory
         max_bound = anom_data.shape[0] - self.forecast_length * 2
-
-        # for i in range(0, max_bound):
-        #     next_point = anom_data[i:i+1, :]
-        #     _, working_residual, working_memory = self.network(next_point, working_residual, working_memory)
-        #     lock_state = net.get_state()
-        #     target = anom_data.data[i + step_size:i + step_size + forecast_range, :]
-        #     pred = net.forecast(future=forecast_range)
-        #     pred = revert_normalization(pred, lock_state)
-        #     net.load_mutable_state(lock_state)
-        #     total_error = 0
-        #     for j in range(anom_data.shape[1]):
-        #         dim_pred = pred[:, j]
-        #         dim_target = target[:, j]
-        #         error = criterion(dim_pred, dim_target)
-        #         total_error += error
-        #     total_error /= anom_data.shape[1]
-        #     intermediate = {
-        #         'error': total_error,
-        #         'index': i + step_size
-        #     }
-        #     print("completed: {}, error was {}".format(str(i), str(total_error)))
-        #     forecast_outputs.append(intermediate)
         anorm_subset = anom_data[0:max_bound, :]
         x, y = self.segment_data(anorm_subset)
         h = self.forecast_every_step(x, working_residual, working_memory)
-        y_f = self.select_key_variables(y)
-        h_f = self.select_key_variables(h)
+        y_f = select_key_variables(self.key_variables, y)
+        h_f = select_key_variables(self.key_variables, h)
         deviations = criterion(y_f, h_f)
         results = process_output_advanced(deviations)
         return results
@@ -92,29 +70,6 @@ class Model:
             h.append(h_n)
         h = torch.stack(h)
         return h
-
-    def select_key_variables(self, tensor: torch.Tensor):
-        if self.key_variables:
-            filtered_tensors = []
-            if len(tensor.shape) == 3:
-                for feature in self.key_variables:
-                    index = feature['index']
-                    filtered_tensors.append(tensor[:, :, index])
-                if isinstance(tensor, torch.Tensor):
-                    filtered_tensor = torch.stack(filtered_tensors, dim=2)
-                else:
-                    filtered_tensor = np.stack(filtered_tensors, axis=2)
-            else:
-                for feature in self.key_variables:
-                    index = feature['index']
-                    filtered_tensors.append(tensor[:, index])
-                if isinstance(tensor, torch.Tensor):
-                    filtered_tensor = torch.stack(filtered_tensors, dim=1)
-                else:
-                    filtered_tensor = np.stack(filtered_tensors, axis=1)
-        else:
-            filtered_tensor = tensor
-        return filtered_tensor
 
     def segment_data(self, data: torch.Tensor):
         segments = []

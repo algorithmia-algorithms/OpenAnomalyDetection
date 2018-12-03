@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 
 
 
@@ -34,4 +34,25 @@ def normalize_and_remove_outliers(data: np.ndarray, multiplier: float, meta_data
     return data
 
 
-
+def select_key_variables(key_variables, tensor: torch.Tensor):
+    if key_variables:
+        filtered_tensors = []
+        if len(tensor.shape) == 3:
+            for feature in key_variables:
+                index = feature['index']
+                filtered_tensors.append(tensor[:, :, index])
+            if isinstance(tensor, torch.Tensor):
+                filtered_tensor = torch.stack(filtered_tensors, dim=2)
+            else:
+                filtered_tensor = np.stack(filtered_tensors, axis=2)
+        else:
+            for feature in key_variables:
+                index = feature['index']
+                filtered_tensors.append(tensor[:, index])
+            if isinstance(tensor, torch.Tensor):
+                filtered_tensor = torch.stack(filtered_tensors, dim=1)
+            else:
+                filtered_tensor = np.stack(filtered_tensors, axis=1)
+    else:
+        filtered_tensor = tensor
+    return filtered_tensor
