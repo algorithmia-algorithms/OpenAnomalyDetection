@@ -10,12 +10,10 @@ def graph_anomalies(anomalies, dataframe):
     full_range = np.arange(dataframe.shape[0])
     fig = plt.gcf()
     fig.set_size_inches(8, 6)
-    dim_color = np.random.rand(3,)
-    plt.plot(full_range, dataframe,
-             c=dim_color)
+    plt.style.use('ggplot')
+    plt.plot(full_range, dataframe)
     for i in range(len(anomalies)):
         anomaly = anomalies[i]
-        anomaly_color = np.random.rand(3, )
         if anomaly['upper'] > dataframe.shape[0]:
             anom_max = dataframe.shape[0]
         else:
@@ -27,7 +25,6 @@ def graph_anomalies(anomalies, dataframe):
         anom_range = np.arange(anom_min, anom_max)
         anom_data = dataframe[anom_min:anom_max]
         plt.plot(anom_range, anom_data,
-                 c=anomaly_color,
                  label='anomaly {}\navg sigma: {:3.5f}\nmax sigma: {:3.5f}'.format(str(i),
                                                                                    anomaly['avg_sigma'],
                                                                                    anomaly['max_sigma']))
