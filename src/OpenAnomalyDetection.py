@@ -1,4 +1,4 @@
-from src import network_processing, data_processing, graph, forecast
+from src import network_utilities, data_utilities, graph_utilities, model_manager
 
 class Parameters:
     def __init__(self):
@@ -15,7 +15,7 @@ def process_input(input):
     if 'data_path' in input:
         parameters.data_path = type_check(input, 'data_path', str)
     else:
-        raise network_processing.AlgorithmError("'data_path' was either not found, or not a string")
+        raise network_utilities.AlgorithmError("'data_path' was either not found, or not a string")
     if 'model_input_path' in input:
         parameters.model_path = type_check(input, 'model_input_path', str)
     if 'sigma_threshold' in input:
@@ -33,12 +33,12 @@ def type_check(dic, id, typedef):
         if isinstance(dic[id], typedef):
             return dic[id]
         else:
-            raise network_processing.AlgorithmError("'{}' must be of {}".format(str(id), str(typedef)))
+            raise network_utilities.AlgorithmError("'{}' must be of {}".format(str(id), str(typedef)))
     else:
         for i in range(len(typedef)):
             if isinstance(dic[id], typedef[i]):
                 return dic[id]
-        raise network_processing.AlgorithmError("'{}' must be of {}".format(str(id), str(typedef)))
+        raise network_utilities.AlgorithmError("'{}' must be of {}".format(str(id), str(typedef)))
 
 
 def find_point_anomalies(statistics, data, forecast_step, sigma_threshold):
@@ -128,21 +128,21 @@ def calc_num_evals(dataframe, coverage_percentage):
 def apply(input):
     guard = process_input(input)
     similar_sigma_threshold = 3
-    data_path = network_processing.get_data(guard.data_path)
-    data = network_processing.load_json(data_path)
-    model, meta = network_processing.get_model_package(guard.model_path)
+    data_path = network_utilities.get_data(guard.data_path)
+    data = network_utilities.load_json(data_path)
+    model, meta = network_utilities.get_model_package(guard.model_path)
     anomaly_radius = meta['forecast_length'] * 2
 
-    normalized_data = data_processing.process_input(data, meta)
-    forecaster = forecast.ForecastModel(meta, model)
+    normalized_data = data_utilities.process_input(data, meta)
+    forecaster = model_manager.ForecastModel(meta, model)
     statistics, data = forecaster.execute(normalized_data, guard.calibration_percentage, guard.variable_index)
     anomalies = find_point_anomalies(statistics, data, meta['forecast_length'], guard.sigma_threshold)
     anomalous_regions = convert_to_anomalous_regions(anomalies, anomaly_radius, similar_sigma_threshold)
     if guard.graph_save_path:
-        key_data = data_processing.select_key_variables(meta['key_variables'], normalized_data)
+        key_data = data_utilities.select_key_variables(meta['key_variables'], normalized_data)
         selected_index = key_data[:, guard.variable_index:guard.variable_index+1]
-        local_graph_path = graph.graph_anomalies(anomalous_regions, selected_index)
-        remote_file_path = network_processing.put_file(local_graph_path, guard.graph_save_path)
+        local_graph_path = graph_utilities.graph_anomalies(anomalous_regions, selected_index)
+        remote_file_path = network_utilities.put_file(local_graph_path, guard.graph_save_path)
         output = {'graph_save_path': remote_file_path, 'anomalous_regions': anomalous_regions}
     else:
         output = {'anomalous_regions': anomalous_regions}
