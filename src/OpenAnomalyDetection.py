@@ -41,7 +41,7 @@ def type_check(dic, id, typedef):
         raise network_processing.AlgorithmError("'{}' must be of {}".format(str(id), str(typedef)))
 
 
-def find_anomalies(statistics, data, forecast_step, sigma_threshold):
+def find_point_anomalies(statistics, data, forecast_step, sigma_threshold):
     point_anomalies = []
     error_mean = statistics['mean']
     error_std = statistics['std']
@@ -59,7 +59,7 @@ def convert_to_anomalous_regions(point_anomalies, anomaly_radius, threshold):
     for point in point_anomalies:
         index = point['index']
         sigma = point['sigma']
-        anom_gaussian = {'lower': index - anomaly_radius, 'upper': index + anomaly_radius, 'sigma': sigma}
+        anom_gaussian = {'lower': index - anomaly_radius, 'upper': index + anomaly_radius, 'avg_sigma': sigma, 'max_sigma': sigma}
         anom_gaussians.append(anom_gaussian)
 
     processed_anomalies = []
@@ -89,16 +89,17 @@ def find_interfering_anomalies(specimen, input_anomalies, interfering_anomalies,
     return interfering_anomalies
 
 def correct_interference(interfering_anomalies):
-    corrected = {'sigma': 0}
+    corrected = {'avg_sigma': 0}
     for inter_anom in interfering_anomalies:
         # corrected['confidence'] += inter_anom['confidence']
-        corrected['sigma'] += inter_anom['sigma']
+        corrected['avg_sigma'] += inter_anom['avg_sigma']
         if 'upper' not in corrected or corrected['upper'] < inter_anom['upper']:
             corrected['upper'] = inter_anom['upper']
         if 'lower' not in corrected or corrected['lower'] > inter_anom['lower']:
             corrected['lower'] = inter_anom['lower']
     # corrected['confidence'] /= len(interfering_anomalies)
-    corrected['sigma'] /= len(interfering_anomalies)
+    corrected['avg_sigma'] /= len(interfering_anomalies)
+    corrected['max_sigma'] = max([anom['max_sigma'] for anom in interfering_anomalies])
     return corrected
 
 
@@ -111,7 +112,7 @@ def detect_interference(elm_x, elm_y, similar_sigma_threshold):
         return False
 
 def within_threshold(elm_x, elm_y, similar_sigma_threshold):
-    if elm_x['sigma'] <= elm_y['sigma']+similar_sigma_threshold or elm_x['sigma'] >= elm_y['sigma']-similar_sigma_threshold:
+    if elm_x['avg_sigma'] <= elm_y['avg_sigma']+similar_sigma_threshold or elm_x['avg_sigma'] >= elm_y['avg_sigma']-similar_sigma_threshold:
         return True
     else:
         return False
@@ -133,9 +134,9 @@ def apply(input):
     anomaly_radius = meta['forecast_length'] * 2
 
     normalized_data = data_processing.process_input(data, meta)
-    forecaster = forecast.Model(meta, model)
+    forecaster = forecast.ForecastModel(meta, model)
     statistics, data = forecaster.execute(normalized_data, guard.calibration_percentage, guard.variable_index)
-    anomalies = find_anomalies(statistics, data, meta['forecast_length'], guard.sigma_threshold)
+    anomalies = find_point_anomalies(statistics, data, meta['forecast_length'], guard.sigma_threshold)
     anomalous_regions = convert_to_anomalous_regions(anomalies, anomaly_radius, similar_sigma_threshold)
     if guard.graph_save_path:
         key_data = data_processing.select_key_variables(meta['key_variables'], normalized_data)

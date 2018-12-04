@@ -13,7 +13,8 @@ def graph_anomalies(anomalies, dataframe):
     dim_color = np.random.rand(3,)
     plt.plot(full_range, dataframe,
              c=dim_color)
-    for anomaly in anomalies:
+    for i in range(len(anomalies)):
+        anomaly = anomalies[i]
         anomaly_color = np.random.rand(3, )
         if anomaly['upper'] > dataframe.shape[0]:
             anom_max = dataframe.shape[0]
@@ -27,8 +28,9 @@ def graph_anomalies(anomalies, dataframe):
         anom_data = dataframe[anom_min:anom_max]
         plt.plot(anom_range, anom_data,
                  c=anomaly_color,
-                 label='anomaly detected, sigma:{}'.format(str(anomaly['sigma'])))
-        plt.title("we detected {} anomalies.".format(str(len(anomalies))))
+                 label='anomaly {}\navg sigma: {:3.5f}\nmax sigma: {:3.5f}'.format(str(i),
+                                                                                   anomaly['avg_sigma'],
+                                                                                   anomaly['max_sigma']))
     plt.xlabel('t')
     plt.ylabel('y(t)')
     plt.legend(loc=2, fontsize='xx-small')

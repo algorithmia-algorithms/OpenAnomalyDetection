@@ -7,10 +7,10 @@ from torch import from_numpy
 import numpy as np
 
 
-class Model:
+class ForecastModel:
 
 
-    def __init__(self, meta_data, network=None):
+    def __init__(self, meta_data: dict, network=None):
         self.residual_shape = meta_data['tensor_shape']['residual']
         self.memory_shape = meta_data['tensor_shape']['memory']
         self.data_dimensionality = meta_data['io_dimension']
@@ -108,7 +108,7 @@ def process_output_advanced(measurements: np.ndarray, dimension: int):
     return statistics, measurements
 
 
-def revert_normalization(data, state):
+def revert_normalization(data: np.ndarray, state):
     norm_boundaries = state['norm_boundaries']
     io_shape = state['io_width']
     output = np.empty(data.shape, float)
@@ -121,7 +121,7 @@ def revert_normalization(data, state):
         output[:, i] = result
     return output
 
-def criterion(prediction, target):
+def criterion(prediction:torch.Tensor, target: torch.Tensor):
     error_rate = 0
     for j in range(prediction.shape[1]):
         out = (prediction[:, j] - target[:, j]).abs()
