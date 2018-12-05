@@ -2,7 +2,7 @@
 ![detected_anomalies](https://i.imgur.com/5DfzfJr.png)
 
 ## Overview
-Find the most anomalous regions in your timeseries data by using your existing [generative forecasting][genfor] model!
+Find anomalous regions in your multi-variate timeseries data, using machine learning.
 
 ### Applicable Scenarios and Problems
 
