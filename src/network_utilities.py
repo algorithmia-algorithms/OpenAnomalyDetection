@@ -4,11 +4,13 @@ from requests.exceptions import ConnectionError
 import torch
 import zipfile
 import json
+from uuid import uuid4
 import os
 client = Algorithmia.client()
 
 MODEL_FILE_NAME = 'model_architecture.pb'
 META_DATA_FILE_NAME = 'meta_data.json'
+FORECAST_ALGO = "algo://timeseries/openforecast/1.1.x"
 
 
 class AlgorithmError(Exception):
@@ -18,6 +20,24 @@ class AlgorithmError(Exception):
     def __str__(self):
         return repr(self.value)
 
+
+def create_model(data_uri: str):
+    r"""
+    Uses the OpenForecast algorithm to automatically create a forecast model that can be used for anomaly detection.
+    :param data_uri: The data file stored in the data API that is formatted as per the standard timeseries format (read the OpenForecast docs for more info).
+    :return: model_uri ready to download
+    """
+    model_name = "model-{}.zip".format(str(uuid4()))
+    input = {
+        'mode': 'train',
+        'data_path': data_uri,
+        'model_output_path': "data://.algo/timeseries/OpenForecast/perm/{}".format(model_name),
+        'training_time': 250,
+        'model_perplexity': 0.25,
+        'forecast_length': 2
+    }
+    result = client.algo(FORECAST_ALGO).pipe(input).result
+    return result['model_output_path']
 
 def get_model_package(remote_package_path: str):
     r"""

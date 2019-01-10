@@ -5,7 +5,7 @@ class Parameters:
         self.data_path = None
         self.graph_save_path = None
         self.sigma_threshold = 2
-        self.model_path = ""
+        self.model_path = None
         self.variable_index = 1
         self.calibration_percentage = 0.1
 
@@ -130,9 +130,12 @@ def apply(input):
     similar_sigma_threshold = 3
     data_path = network_utilities.get_data(guard.data_path)
     data = network_utilities.load_json(data_path)
-    model, meta = network_utilities.get_model_package(guard.model_path)
+    if "model_input_path" in input:
+        model, meta = network_utilities.get_model_package(guard.model_path)
+    else:
+        model_uri = network_utilities.create_model(guard.data_path)
+        model, meta = network_utilities.get_model_package(model_uri)
     anomaly_radius = meta['forecast_length'] * 2
-
     normalized_data = data_utilities.process_input(data, meta)
     forecaster = model_manager.ForecastModel(meta, model)
     statistics, data = forecaster.execute(normalized_data, guard.calibration_percentage, guard.variable_index)
