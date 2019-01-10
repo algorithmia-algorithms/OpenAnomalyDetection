@@ -2,7 +2,6 @@ Open Anomaly Detection is an open source **multivariate**, **portable** and **cu
 <img src="https://i.imgur.com/wcFCKL5.png"></img>
 
 ## Introduction
-
 That's a lot of stuff, lets break down each of those terms:
 * Multivariate - Being able to predict anomalies in univariate problems (situations with only 1 variable) are not that common. More often we
 need the capability to support multiple independent variables, this algorithm can do that.
