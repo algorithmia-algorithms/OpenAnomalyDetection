@@ -1,9 +1,23 @@
-Open Anomaly Detection is an open source **multivariate**, **portable** and **customizable** Anomaly Detection algorithm, powered by our [OpenForecast][forecast] model. You can see it in action [here][algolink].
+Open Anomaly Detection is an open source **multivariate**, **portable** and **customizable** Prediction based Anomaly Detection algorithm, powered by our [OpenForecast][forecast] model. You can see it in action [here][algolink].
 <img src="https://i.imgur.com/wcFCKL5.png"></img>
 
 ## Introduction
 
+That's a lot of stuff, lets break down each of those terms:
+* Multivariate - Being able to predict anomalies in univariate problems (situations with only 1 variable) are not that common. More often we
+need the capability to support multiple independent variables, this algorithm can do that.
+* Portable - This algorithm is designed to run best on the [Algorithmia][algo] platform, however it's capable of running on any linux based system.
+* Open Source - As you can see, this algorithm is fully open source and available for public consumption! If you have any ideas on how to make it even better, please feel free to file a PR.
+* Customizable - This model is designed to be trained and specialized to your data. All variables are exposed and available for tinkering.
+* Prediction based - This algorithm uses a [Prediction based][pred] replication failure metric for measuring anomalies, this means that we go deeper than just looking at periods or peaks - this algorithm learns what normal data looks like, and what constitutes an anomaly within your data.
+
+To do all of this, we heavily the [Pytorch][pytorch] machine learning framework, along with the [OpenForecast][forecast] Algorithm.
+
+
 ## Getting Started Guide
+
+
+
 
 ### Anomaly Detection
 
@@ -96,8 +110,9 @@ Output:
    ]
 }
 ```
-
+[algo]: https://www.algorithmia.com
+[pred]: https://www.dynatrace.com/support/help/monitor/problems/problem-detection/prediction-based-anomaly-detection/
+[forecast]: 
 [algolink]: https://algorithmia.com/algorithms/TimeSeries/OpenAnomalyDetection
-[rossman_example]: https://github.com/algorithmia-algorithms/OpenForecast/tree/master/tools#the-standard-timeseries-format
 [pytorch]: https://algorithmia.com/algorithms/TimeSeries/OpenForecast
 [gitreadme]: GITREADME.d
