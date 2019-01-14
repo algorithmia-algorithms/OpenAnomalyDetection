@@ -1,5 +1,6 @@
-Open Anomaly Detection is an open source **multivariate**, **portable** and **customizable** Prediction based Anomaly Detection algorithm, powered by our [OpenForecast][forecast] model. You can see it in action [here][algolink].
 <img src="https://i.imgur.com/wcFCKL5.png"></img>
+
+Open Anomaly Detection is an open source **multivariate**, **portable** and **customizable** Prediction based Anomaly Detection algorithm, powered by our [OpenForecast][forecast] model. You can see it in action [here][algolink].
 
 ## Introduction
 
@@ -14,21 +15,82 @@ need the capability to support multiple independent variables, this algorithm ca
 To do all of this, we heavily the [Pytorch][pytorch] machine learning framework, along with the [OpenForecast][forecast] Algorithm.
 
 
-## Getting Started Guide
+## More Introduction
+
+This algorithm requires an `OpenForecast` model to be constructed. If you already have a model constructed for your data, excellent!
+Otherwise, we'll have to create one on-the-fly.
+Once a OpenForecast model has been loaded, the algorithm begins to test every part of the sequence for anomalies. It does this by using the `OpenForecast` model to forecast the next n steps at each point along the sequence.
+If the predicted sequence is different than what is observed, we measure a deviation - if that deviation is very different from the average, we describe that as an `anomaly`.
+
+### Getting Started guide
+This algorithm has 2 modes, and a few optional parameters. As previously mentioned, we require an `openForecast` model - and if you don't provide one, we train one for you.
+We also require that your data is formatted into our [standard data format][sdf], this is to ensure compatibility with the openForecast model - if you need help here, please take a look at the two examples in the openForecast `tools` directory.
+Besides that, we also have an optional graphical representation output (where we create a nice graph like the one shown above for visual aide) - however for performance optimizations
+we made such a representation optional. Let's take a look at an example.
 
 
 
-
-### Anomaly Detection
-
-##### Example IO
+##### Example 1 IO
 Input: 
 ```json
+
+{  
+   "data_path":"data://TimeSeries/GenerativeForecasting/m4_daily.json",
+   "model_input_path":"data://TimeSeries/GenerativeForecasting/m4_daily_0.1.0.zip",
+   "graph_save_path":"data://.algo/TimeSeries/OpenAnomalyDetection/temp/graph_file.png",
+   "sigma_threshold":3,
+   "variable_index":4,
+   "calibration_percentage":0.1
+}
+
 ```
 
 Output:
 
+<img src="https://i.imgur.com/JpBWmOl.png"></img>
+
 ```json
+{  
+   "anomalous_regions":[  
+      {  
+         "avg_sigma":3.660663907275452,
+         "lower":101,
+         "max_sigma":4.103103630663716,
+         "upper":127
+      },
+      {  
+         "avg_sigma":3.0623424236141226,
+         "lower":213,
+         "max_sigma":3.0882601499796563,
+         "upper":234
+      },
+      {  
+         "avg_sigma":3.733702727997744,
+         "lower":295,
+         "max_sigma":4.329303116744169,
+         "upper":321
+      },
+      {  
+         "avg_sigma":4.24959275689059,
+         "lower":386,
+         "max_sigma":5.114906226119579,
+         "upper":412
+      },
+      {  
+         "avg_sigma":3.3073228279258013,
+         "lower":437,
+         "max_sigma":3.509339547886696,
+         "upper":460
+      },
+      {  
+         "avg_sigma":3.9148479154691462,
+         "lower":471,
+         "max_sigma":4.258586517731104,
+         "upper":498
+      }
+   ],
+   "graph_save_path":"data://.algo/TimeSeries/OpenAnomalyDetection/temp/graph_file.png"
+}
 ```
 
 ## IO Schema
@@ -112,7 +174,8 @@ Output:
 ```
 [algo]: https://www.algorithmia.com
 [pred]: https://www.dynatrace.com/support/help/monitor/problems/problem-detection/prediction-based-anomaly-detection/
-[forecast]: 
+[forecast]: https://github.com/algorithmia-algorithms/OpenForecast
 [algolink]: https://algorithmia.com/algorithms/TimeSeries/OpenAnomalyDetection
+[sdf]: https://github.com/algorithmia-algorithms/OpenForecast/tree/master/tools#the-standard-timeseries-format
 [pytorch]: https://algorithmia.com/algorithms/TimeSeries/OpenForecast
 [gitreadme]: GITREADME.d

@@ -5,8 +5,8 @@ import os
 def test_detection_algorithmia():
     input = dict()
     input['data_path'] = 'data://TimeSeries/GenerativeForecasting/m4_daily.json'
-    input['model_input_path'] = 'data://timeseries/example_collection/m4_daily_0.1.0.zip'
-    input['graph_save_path'] = 'data://.my/replaceme/graph_file.png'
+    input['model_input_path'] = 'data://timeseries/GenerativeForecasting/m4_daily_0.1.0.zip'
+    input['graph_save_path'] = 'data://.algo/timeseries/openanomalydetection/graph_file.png'
     input['sigma_threshold'] = 3
     input['variable_index'] = 3
     input['calibration_percentage'] = 0.1
@@ -50,4 +50,4 @@ def test_detection_local():
 
 
 if __name__ == "__main__":
-    test_detection_algorithmia_nomodel()
+    print(test_detection_algorithmia())
