@@ -29,8 +29,9 @@ Besides that, we also have an optional graphical representation output (where we
 we made such a representation optional. Let's take a look at an example.
 
 
+## Examples
 
-##### Example 1 IO
+##### Example 1
 Input: 
 ```json
 
@@ -90,6 +91,42 @@ Output:
       }
    ],
    "graph_save_path":"data://.algo/TimeSeries/OpenAnomalyDetection/temp/graph_file.png"
+}
+```
+
+
+#### Example 2
+
+Input:
+```json
+{  
+   "data_path":"data://TimeSeries/GenerativeForecasting/formatted_data_rossman_10.json",
+   "graph_save_path":"data://.algo/TimeSeries/OpenAnomalyDetection/temp/rossman_graph.png",
+   "calibration_percentage":0.1
+}
+```
+
+Output:
+
+<img src="https://i.imgur.com/Ohakw37.png"></img>
+
+```json
+{  
+   "anomalous_regions":[  
+      {  
+         "avg_sigma":2.411330730458791,
+         "lower":5,
+         "max_sigma":2.842559054162925,
+         "upper":26
+      },
+      {  
+         "avg_sigma":2.9487772489340407,
+         "lower":40,
+         "max_sigma":4.369209703720929,
+         "upper":64
+      }
+   ],
+   "graph_save_path":"data://.algo/TimeSeries/OpenAnomalyDetection/temp/rossman_graph.png"
 }
 ```
 
